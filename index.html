@@ -515,8 +515,8 @@ footer{text-align:center;padding:2rem;color:var(--text3);font-size:.7rem;transit
           <table class="leg-table">
             <thead><tr><th>Fuente</th><th>Que aporta</th><th>Metodo de extraccion</th></tr></thead>
             <tbody>
-              <tr><td>AD XX1</td><td>Usuarios del dominio <code>scfes.scf.corp</code> (ES, CH)</td><td>Consulta LDAP con filtro <code>UAC=512</code> (cuentas activas), excluyendo <code>NOFIM</code> y <code>NOO365</code>. Se consultan <strong>todos los DCs</strong> para obtener el <code>lastLogon</code> real (maximo).</td></tr>
-              <tr><td>AD XX2</td><td>Usuarios del dominio <code>sceuadfrp.sceu.corp</code> (FR, PT, IT, GS, AT, BE, CA, GR, MS, NL, NO, PL)</td><td>Mismo metodo que SCFES.</td></tr>
+              <tr><td>AD XX1</td><td>Usuarios del dominio <code>XX1.local</code> (ES, CH)</td><td>Consulta LDAP con filtro <code>UAC=512</code> (cuentas activas), excluyendo <code>NOFIM</code> y <code>NOO365</code>. Se consultan <strong>todos los DCs</strong> para obtener el <code>lastLogon</code> real (maximo).</td></tr>
+              <tr><td>AD XX2</td><td>Usuarios del dominio <code>XX2.local</code> (FR, PT, IT, GS, AT, BE, CA, GR, MS, NL, NO, PL)</td><td>Mismo metodo que XX1.</td></tr>
               <tr><td>Azure / Entra ID</td><td><code>LastSuccessfulSignIn</code>, estado de sincronizacion</td><td>API Microsoft Graph via modulo <code>Az.Accounts</code>.</td></tr>
               <tr><td>RRHH</td><td>Manager, ManagerMail, Departamento, estado activo (<code>USER_ACTIVE</code>)</td><td>Fichero <code>Usuariosgim.csv</code> (delimitador <code>;</code>, UTF-8 BOM). GIM es el repositorio intermedio entre Workday (RRHH) y los sistemas finales. Clave de cruce: <code>PSIDUSUARIO</code> = <code>sAMAccountName</code> (case-insensitive).</td></tr>
             </tbody>
@@ -524,7 +524,7 @@ footer{text-align:center;padding:2rem;color:var(--text3);font-size:.7rem;transit
           <div class="leg-flow">
             <strong>Pipeline:</strong> <code>ad_final.py</code> (extrae AD) &rarr; <code>azure.ps1</code> (extrae Azure) &rarr; <code>consolidado.ps1</code> (cruza AD + Azure + RRHH, clasifica y genera <code>resultado_final.json</code>) &rarr; <code>dashboard.html</code> (visualiza)
           </div>
-          <p style="margin-top:.5rem"><strong>Pais:</strong> Se determina a partir de la <strong>OU</strong> del DN del usuario en AD (p.ej. <code>OU=IT,...</code> = Italia). Para el dominio SCFES, se distingue Suiza por el dominio de correo <code>@.ch</code>.</p>
+          <p style="margin-top:.5rem"><strong>Pais:</strong> Se determina a partir de la <strong>OU</strong> del DN del usuario en AD (p.ej. <code>OU=IT,...</code> = Italia). Para el dominio XX1.LOCAL, se distingue Suiza por el dominio de correo <code>@.ch</code>.</p>
         </div>
       </details>
 
@@ -757,8 +757,8 @@ const LEGEND_EN = {
           <table class="leg-table">
             <thead><tr><th>Source</th><th>What it provides</th><th>Extraction method</th></tr></thead>
             <tbody>
-              <tr><td>AD SCFES</td><td>Users from domain <code>scfes.scf.corp</code> (ES, CH)</td><td>LDAP query with <code>UAC=512</code> filter (active accounts), excluding <code>NOFIM</code> and <code>NOO365</code>. <strong>All DCs</strong> are queried to get the real <code>lastLogon</code> (maximum).</td></tr>
-              <tr><td>AD SCEU</td><td>Users from domain <code>sceuadfrp.sceu.corp</code> (FR, PT, IT, GS, AT, BE, CA, GR, MS, NL, NO, PL)</td><td>Same method as SCFES.</td></tr>
+              <tr><td>AD XX1.LOCAL</td><td>Users from domain <code>XX1.LOCAL/code> (ES, CH)</td><td>LDAP query with <code>UAC=512</code> filter (active accounts), excluding <code>NOFIM</code> and <code>NOO365</code>. <strong>All DCs</strong> are queried to get the real <code>lastLogon</code> (maximum).</td></tr>
+              <tr><td>AD SCEU</td><td>Users from domain <code>XX2.LOCAL</code> (FR, PT, IT, GS, AT, BE, CA, GR, MS, NL, NO, PL)</td><td>Same method as XX1.</td></tr>
               <tr><td>Azure / Entra ID</td><td><code>LastSuccessfulSignIn</code>, synchronization status</td><td>Microsoft Graph API via <code>Az.Accounts</code> module.</td></tr>
               <tr><td>GIM / Workday</td><td>Manager, ManagerMail, Department, active status (<code>USER_ACTIVE</code>)</td><td>File <code>Usuariosgim.csv</code> (delimiter <code>;</code>, UTF-8 BOM). GIM is the intermediary repository between Workday (HR) and target systems. Cross-reference key: <code>PSIDUSUARIO</code> = <code>sAMAccountName</code> (case-insensitive).</td></tr>
             </tbody>
@@ -766,7 +766,7 @@ const LEGEND_EN = {
           <div class="leg-flow">
             <strong>Pipeline:</strong> <code>ad_final.py</code> (extracts AD) &rarr; <code>azure.ps1</code> (extracts Azure) &rarr; <code>consolidado.ps1</code> (cross-references AD + Azure + GIM, classifies and generates <code>resultado_final.json</code>) &rarr; <code>dashboard.html</code> (visualizes)
           </div>
-          <p style="margin-top:.5rem"><strong>Country:</strong> Determined from the <strong>OU</strong> in the user's DN in AD (e.g. <code>OU=IT,...</code> = Italy). For the SCFES domain, Switzerland is distinguished by the email domain <code>@.ch</code>.</p>`,
+          <p style="margin-top:.5rem"><strong>Country:</strong> Determined from the <strong>OU</strong> in the user's DN in AD (e.g. <code>OU=IT,...</code> = Italy). For the XX1 domain, Switzerland is distinguished by the email domain <code>@.ch</code>.</p>`,
   gim: `
           <p>Classifies the status of each account by cross-referencing <strong>existence and status in GIM/Workday</strong> (authoritative source) with <strong>existence in AD</strong>. The control is <strong>AD-centric</strong>: only users present in AD are analyzed.</p>
           <table class="leg-table">
