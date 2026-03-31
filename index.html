@@ -515,14 +515,14 @@ footer{text-align:center;padding:2rem;color:var(--text3);font-size:.7rem;transit
           <table class="leg-table">
             <thead><tr><th>Fuente</th><th>Que aporta</th><th>Metodo de extraccion</th></tr></thead>
             <tbody>
-              <tr><td>AD SCFES</td><td>Usuarios del dominio <code>scfes.scf.corp</code> (ES, CH)</td><td>Consulta LDAP con filtro <code>UAC=512</code> (cuentas activas), excluyendo <code>NOFIM</code> y <code>NOO365</code>. Se consultan <strong>todos los DCs</strong> para obtener el <code>lastLogon</code> real (maximo).</td></tr>
-              <tr><td>AD SCEU</td><td>Usuarios del dominio <code>sceuadfrp.sceu.corp</code> (FR, PT, IT, GS, AT, BE, CA, GR, MS, NL, NO, PL)</td><td>Mismo metodo que SCFES.</td></tr>
+              <tr><td>AD XX1</td><td>Usuarios del dominio <code>scfes.scf.corp</code> (ES, CH)</td><td>Consulta LDAP con filtro <code>UAC=512</code> (cuentas activas), excluyendo <code>NOFIM</code> y <code>NOO365</code>. Se consultan <strong>todos los DCs</strong> para obtener el <code>lastLogon</code> real (maximo).</td></tr>
+              <tr><td>AD XX2</td><td>Usuarios del dominio <code>sceuadfrp.sceu.corp</code> (FR, PT, IT, GS, AT, BE, CA, GR, MS, NL, NO, PL)</td><td>Mismo metodo que SCFES.</td></tr>
               <tr><td>Azure / Entra ID</td><td><code>LastSuccessfulSignIn</code>, estado de sincronizacion</td><td>API Microsoft Graph via modulo <code>Az.Accounts</code>.</td></tr>
-              <tr><td>GIM / Workday</td><td>Manager, ManagerMail, Departamento, estado activo (<code>USER_ACTIVE</code>)</td><td>Fichero <code>Usuariosgim.csv</code> (delimitador <code>;</code>, UTF-8 BOM). GIM es el repositorio intermedio entre Workday (RRHH) y los sistemas finales. Clave de cruce: <code>PSIDUSUARIO</code> = <code>sAMAccountName</code> (case-insensitive).</td></tr>
+              <tr><td>RRHH</td><td>Manager, ManagerMail, Departamento, estado activo (<code>USER_ACTIVE</code>)</td><td>Fichero <code>Usuariosgim.csv</code> (delimitador <code>;</code>, UTF-8 BOM). GIM es el repositorio intermedio entre Workday (RRHH) y los sistemas finales. Clave de cruce: <code>PSIDUSUARIO</code> = <code>sAMAccountName</code> (case-insensitive).</td></tr>
             </tbody>
           </table>
           <div class="leg-flow">
-            <strong>Pipeline:</strong> <code>ad_final.py</code> (extrae AD) &rarr; <code>azure.ps1</code> (extrae Azure) &rarr; <code>consolidado.ps1</code> (cruza AD + Azure + GIM, clasifica y genera <code>resultado_final.json</code>) &rarr; <code>dashboard.html</code> (visualiza)
+            <strong>Pipeline:</strong> <code>ad_final.py</code> (extrae AD) &rarr; <code>azure.ps1</code> (extrae Azure) &rarr; <code>consolidado.ps1</code> (cruza AD + Azure + RRHH, clasifica y genera <code>resultado_final.json</code>) &rarr; <code>dashboard.html</code> (visualiza)
           </div>
           <p style="margin-top:.5rem"><strong>Pais:</strong> Se determina a partir de la <strong>OU</strong> del DN del usuario en AD (p.ej. <code>OU=IT,...</code> = Italia). Para el dominio SCFES, se distingue Suiza por el dominio de correo <code>@.ch</code>.</p>
         </div>
