@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IAM Audit Dashboard | SCF</title>
+<title>IAM Audit Dashboard | </title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
@@ -206,7 +206,7 @@ footer{text-align:center;padding:2rem;color:var(--text3);font-size:.7rem;transit
     <div class="logo-icon">SC</div>
     <div>
       <h1>IAM Audit Dashboard</h1>
-      <span data-i18n="app.subtitle">Santander Consumer Finance &mdash; Identity &amp; Access Management</span>
+      <span data-i18n="app.subtitle" &mdash; Identity &amp; Access Management</span>
     </div>
   </div>
   <div class="header-right">
@@ -524,7 +524,7 @@ footer{text-align:center;padding:2rem;color:var(--text3);font-size:.7rem;transit
           <div class="leg-flow">
             <strong>Pipeline:</strong> <code>ad_final.py</code> (extrae AD) &rarr; <code>azure.ps1</code> (extrae Azure) &rarr; <code>consolidado.ps1</code> (cruza AD + Azure + GIM, clasifica y genera <code>resultado_final.json</code>) &rarr; <code>dashboard.html</code> (visualiza)
           </div>
-          <p style="margin-top:.5rem"><strong>Pais:</strong> Se determina a partir de la <strong>OU</strong> del DN del usuario en AD (p.ej. <code>OU=IT,...</code> = Italia). Para el dominio SCFES, se distingue Suiza por el dominio de correo <code>@santanderconsumerfinance.ch</code>.</p>
+          <p style="margin-top:.5rem"><strong>Pais:</strong> Se determina a partir de la <strong>OU</strong> del DN del usuario en AD (p.ej. <code>OU=IT,...</code> = Italia). Para el dominio SCFES, se distingue Suiza por el dominio de correo <code>@.ch</code>.</p>
         </div>
       </details>
 
@@ -560,7 +560,7 @@ footer{text-align:center;padding:2rem;color:var(--text3);font-size:.7rem;transit
 </main>
 
 <footer>
-  <p data-i18n-html="footer">IAM Audit Dashboard &copy; 2025 &mdash; Santander Consumer Finance &mdash; Generado automaticamente desde <code>iam.json</code></p>
+  <p data-i18n-html="footer">IAM Audit Dashboard &copy; 2025 &mdash;  &mdash; Generado automaticamente desde <code>iam.json</code></p>
 </footer>
 
 <script>
@@ -569,7 +569,7 @@ let currentLang = 'es';
 
 const I18N = {
   es: {
-    'app.subtitle': 'Santander Consumer Finance \u2014 Identity & Access Management',
+    'app.subtitle': ' \u2014 Identity & Access Management',
     'filter.country':'Pais','filter.type':'Tipo','filter.risk':'Riesgo',
     'filter.usage':'Estado','filter.decision':'Decision','filter.gim':'GIM','filter.all':'Todos',
     'btn.reset':'Reset','btn.load':'Cargar JSON','btn.export':'Exportar CSV',
@@ -611,10 +611,10 @@ const I18N = {
     'col.decision':'Decision','col.daysSinceLogin':'Dias sin login',
     'col.daysPwd':'Dias pwd','col.azure':'Azure','col.azureCase':'Caso Azure',
     'col.casoGIM':'Caso GIM','col.manager':'Manager','col.departamento':'Departamento',
-    'footer':'IAM Audit Dashboard \u00a9 2025 \u2014 Santander Consumer Finance \u2014 Generado automaticamente desde <code>iam.json</code>',
+    'footer':'IAM Audit Dashboard \u00a9 2025 \u2014  \u2014 Generado automaticamente desde <code>iam.json</code>',
   },
   en: {
-    'app.subtitle': 'Santander Consumer Finance \u2014 Identity & Access Management',
+    'app.subtitle': ' \u2014 Identity & Access Management',
     'filter.country':'Country','filter.type':'Type','filter.risk':'Risk',
     'filter.usage':'Status','filter.decision':'Decision','filter.gim':'GIM','filter.all':'All',
     'btn.reset':'Reset','btn.load':'Load JSON','btn.export':'Export CSV',
@@ -656,7 +656,7 @@ const I18N = {
     'col.decision':'Decision','col.daysSinceLogin':'Days since login',
     'col.daysPwd':'Days pwd','col.azure':'Azure','col.azureCase':'Azure Case',
     'col.casoGIM':'GIM Case','col.manager':'Manager','col.departamento':'Department',
-    'footer':'IAM Audit Dashboard \u00a9 2025 \u2014 Santander Consumer Finance \u2014 Auto-generated from <code>iam.json</code>',
+    'footer':'IAM Audit Dashboard \u00a9 2025 \u2014  \u2014 Auto-generated from <code>iam.json</code>',
   }
 };
 
@@ -766,7 +766,7 @@ const LEGEND_EN = {
           <div class="leg-flow">
             <strong>Pipeline:</strong> <code>ad_final.py</code> (extracts AD) &rarr; <code>azure.ps1</code> (extracts Azure) &rarr; <code>consolidado.ps1</code> (cross-references AD + Azure + GIM, classifies and generates <code>resultado_final.json</code>) &rarr; <code>dashboard.html</code> (visualizes)
           </div>
-          <p style="margin-top:.5rem"><strong>Country:</strong> Determined from the <strong>OU</strong> in the user's DN in AD (e.g. <code>OU=IT,...</code> = Italy). For the SCFES domain, Switzerland is distinguished by the email domain <code>@santanderconsumerfinance.ch</code>.</p>`,
+          <p style="margin-top:.5rem"><strong>Country:</strong> Determined from the <strong>OU</strong> in the user's DN in AD (e.g. <code>OU=IT,...</code> = Italy). For the SCFES domain, Switzerland is distinguished by the email domain <code>@.ch</code>.</p>`,
   gim: `
           <p>Classifies the status of each account by cross-referencing <strong>existence and status in GIM/Workday</strong> (authoritative source) with <strong>existence in AD</strong>. The control is <strong>AD-centric</strong>: only users present in AD are analyzed.</p>
           <table class="leg-table">
