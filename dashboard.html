@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark" data-lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IAM Audit Dashboard | SCF</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+/* Dark theme (default) */
+:root,[data-theme="dark"]{
+  --bg:#0a0e1a;--card:#141b2d;--card-hover:#1a2340;--border:rgba(255,255,255,.06);
+  --text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;
+  --red:#ec0000;--green:#22c55e;--amber:#eab308;--danger:#ef4444;
+  --blue:#3b82f6;--purple:#8b5cf6;--cyan:#06b6d4;--orange:#f97316;
+  --radius:12px;--shadow:0 4px 24px rgba(0,0,0,.4);
+  --header-bg:linear-gradient(135deg,#141b2d 0%,#1a1030 100%);
+  --input-bg:#0f1525;--table-header-bg:#0f1525;--leg-bg:#0f1525;
+  --code-bg:rgba(255,255,255,.06);--row-hover:rgba(59,130,246,.06);
+  --leg-td-border:rgba(255,255,255,.03);
+}
+
+/* Light theme */
+[data-theme="light"]{
+  --bg:#f0f2f5;--card:#ffffff;--card-hover:#f7f8fa;--border:rgba(0,0,0,.1);
+  --text:#1a202c;--text2:#4a5568;--text3:#718096;
+  --red:#dc2626;--green:#16a34a;--amber:#ca8a04;--danger:#dc2626;
+  --blue:#2563eb;--purple:#7c3aed;--cyan:#0891b2;--orange:#ea580c;
+  --radius:12px;--shadow:0 4px 24px rgba(0,0,0,.08);
+  --header-bg:linear-gradient(135deg,#ffffff 0%,#f0f2f5 100%);
+  --input-bg:#f7f8fa;--table-header-bg:#f0f2f5;--leg-bg:#f7f8fa;
+  --code-bg:rgba(0,0,0,.06);--row-hover:rgba(59,130,246,.04);
+  --leg-td-border:rgba(0,0,0,.05);
+}
+
+html{font-size:14px}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--text3);border-radius:3px}
+
+/* Header */
+header{background:var(--header-bg);border-bottom:1px solid var(--border);padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);transition:background .3s,border-color .3s}
+.logo{display:flex;align-items:center;gap:.75rem}
+.logo-icon{width:36px;height:36px;background:var(--red);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.1rem;color:#fff}
+.logo h1{font-size:1.25rem;font-weight:700;letter-spacing:-.02em}
+.logo span{font-size:.75rem;color:var(--text2);font-weight:400;display:block}
+.header-right{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+.filter-group{display:flex;align-items:center;gap:.5rem}
+.filter-group label{font-size:.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+select,input[type=text]{background:var(--input-bg);border:1px solid var(--border);color:var(--text);padding:.4rem .6rem;border-radius:6px;font-size:.8rem;font-family:inherit;outline:none;transition:border .2s,background .3s,color .3s}
+select:focus,input[type=text]:focus{border-color:var(--blue)}
+.btn{padding:.4rem .8rem;border-radius:6px;border:none;font-size:.75rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:#2563eb}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2)}
+.btn-outline:hover{border-color:var(--text2);color:var(--text)}
+#file-picker{display:none}
+
+/* Toggle buttons */
+.toggle-group{display:flex;gap:.4rem;align-items:center}
+.toggle-btn{padding:.35rem .6rem;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:.7rem;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;display:flex;align-items:center;gap:.35rem;line-height:1}
+.toggle-btn:hover{border-color:var(--text2);color:var(--text)}
+.toggle-btn .icon{font-size:.85rem;line-height:1}
+
+/* Loading */
+#loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:80vh;gap:1.5rem}
+.spinner{width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loading p{color:var(--text2);font-size:.9rem}
+
+/* Main */
+main{padding:1.5rem 2rem 3rem;display:none}
+
+/* KPI Grid */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.5rem}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s,background .3s,border-color .3s}
+.kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius) var(--radius) 0 0}
+.kpi-red::before{background:var(--danger)}
+.kpi-green::before{background:var(--green)}
+.kpi-amber::before{background:var(--amber)}
+.kpi-blue::before{background:var(--blue)}
+.kpi-purple::before{background:var(--purple)}
+.kpi-cyan::before{background:var(--cyan)}
+.kpi-label{font-size:.7rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:.5rem}
+.kpi-value{font-size:2rem;font-weight:800;letter-spacing:-.03em;line-height:1}
+.kpi-sub{font-size:.75rem;color:var(--text2);margin-top:.4rem}
+.kpi-value.danger{color:var(--danger)}
+.kpi-value.green{color:var(--green)}
+.kpi-value.amber{color:var(--amber)}
+
+/* Section title */
+.section-title{font-size:.85rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin:1.5rem 0 1rem;padding-bottom:.5rem;border-bottom:1px solid var(--border);transition:color .3s,border-color .3s}
+
+/* Chart Grid */
+.chart-row{display:grid;gap:1rem;margin-bottom:1rem}
+.chart-row-3{grid-template-columns:repeat(3,1fr)}
+.chart-row-2{grid-template-columns:repeat(2,1fr)}
+.chart-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem;transition:box-shadow .2s,background .3s,border-color .3s}
+.chart-box:hover{box-shadow:var(--shadow)}
+.chart-box h3{font-size:.8rem;font-weight:600;color:var(--text2);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+.chart-box h3 .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.chart-wrap{position:relative;width:100%;aspect-ratio:1/1;max-height:280px;margin:0 auto}
+.chart-wrap-bar{aspect-ratio:auto;height:300px}
+
+/* Table */
+.table-section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem;margin-top:1rem;transition:background .3s,border-color .3s}
+.table-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem}
+.table-header h3{font-size:.85rem;font-weight:600;color:var(--text)}
+.table-controls{display:flex;gap:.5rem;align-items:center}
+#table-search{width:220px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.78rem}
+thead th{background:var(--table-header-bg);color:var(--text2);font-weight:600;text-transform:uppercase;font-size:.65rem;letter-spacing:.06em;padding:.6rem .5rem;text-align:left;position:sticky;top:0;cursor:pointer;user-select:none;white-space:nowrap;border-bottom:2px solid var(--border);transition:background .3s,color .3s}
+thead th:hover{color:var(--text)}
+thead th .sort-icon{margin-left:.3rem;opacity:.3;font-size:.6rem}
+thead th.sorted .sort-icon{opacity:1;color:var(--blue)}
+tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
+tbody tr:hover{background:var(--row-hover)}
+tbody td{padding:.5rem;white-space:nowrap}
+.badge{padding:.15rem .5rem;border-radius:4px;font-size:.65rem;font-weight:600;display:inline-block}
+.badge-alto{background:rgba(239,68,68,.15);color:#f87171}
+.badge-medio{background:rgba(234,179,8,.15);color:#facc15}
+.badge-bajo{background:rgba(34,197,94,.15);color:#4ade80}
+.badge-active{background:rgba(34,197,94,.12);color:#4ade80}
+.badge-aging{background:rgba(234,179,8,.12);color:#facc15}
+.badge-inactive{background:rgba(239,68,68,.12);color:#f87171}
+.badge-never{background:rgba(100,116,139,.15);color:#94a3b8}
+.badge-ok{background:rgba(34,197,94,.12);color:#4ade80}
+.badge-stale{background:rgba(239,68,68,.12);color:#f87171}
+.badge-gim-ok{background:rgba(34,197,94,.12);color:#4ade80}
+.badge-gim-analizar{background:rgba(100,116,139,.15);color:#94a3b8}
+.badge-gim-gda{background:rgba(239,68,68,.15);color:#f87171}
+.badge-gim-okd{background:rgba(59,130,246,.12);color:#60a5fa}
+.badge-gim-habilitar{background:rgba(234,179,8,.15);color:#facc15}
+.pagination{display:flex;align-items:center;justify-content:space-between;margin-top:1rem;font-size:.75rem;color:var(--text2)}
+.pagination button{background:transparent;border:1px solid var(--border);color:var(--text2);padding:.3rem .6rem;border-radius:4px;cursor:pointer;font-size:.75rem;font-family:inherit;transition:border-color .2s,color .2s}
+.pagination button:hover:not(:disabled){border-color:var(--blue);color:var(--text)}
+.pagination button:disabled{opacity:.3;cursor:default}
+.page-btns{display:flex;gap:.3rem}
+
+/* Legend */
+.legend-section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;margin-top:1rem;transition:background .3s,border-color .3s}
+.legend-section h3{font-size:.9rem;font-weight:700;color:var(--text);margin-bottom:1rem}
+.legend-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1rem}
+details.leg{background:var(--leg-bg);border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:border-color .2s,background .3s}
+details.leg[open]{border-color:rgba(59,130,246,.25)}
+details.leg summary{padding:.7rem 1rem;cursor:pointer;font-size:.8rem;font-weight:600;color:var(--text);display:flex;align-items:center;gap:.5rem;list-style:none;user-select:none}
+details.leg summary::-webkit-details-marker{display:none}
+details.leg summary::before{content:'';display:inline-block;width:0;height:0;border:5px solid transparent;border-left:6px solid var(--text2);transition:transform .2s;flex-shrink:0}
+details.leg[open] summary::before{transform:rotate(90deg)}
+details.leg summary .leg-icon{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.7rem;flex-shrink:0;font-weight:800;color:#fff}
+.leg-body{padding:0 1rem 1rem;font-size:.78rem;color:var(--text2);line-height:1.7}
+.leg-body p{margin-bottom:.5rem}
+.leg-table{width:100%;border-collapse:collapse;margin-top:.5rem;font-size:.75rem}
+.leg-table th{text-align:left;padding:.35rem .5rem;color:var(--text3);font-weight:600;text-transform:uppercase;font-size:.65rem;letter-spacing:.04em;border-bottom:1px solid var(--border)}
+.leg-table td{padding:.35rem .5rem;border-bottom:1px solid var(--leg-td-border);vertical-align:top}
+.leg-table td:first-child{white-space:nowrap;font-weight:600;color:var(--text)}
+.leg-table .formula{font-family:'Courier New',monospace;background:rgba(59,130,246,.08);padding:.15rem .4rem;border-radius:3px;font-size:.7rem;color:var(--blue)}
+.leg-table code{font-family:'Courier New',monospace;background:var(--code-bg);padding:.1rem .3rem;border-radius:3px;font-size:.7rem}
+.leg-flow{margin:.5rem 0;padding:.5rem .8rem;background:rgba(139,92,246,.06);border-left:3px solid var(--purple);border-radius:0 6px 6px 0;font-size:.73rem;line-height:1.6}
+
+/* Footer */
+footer{text-align:center;padding:2rem;color:var(--text3);font-size:.7rem;transition:color .3s}
+
+/* File drop zone */
+.drop-zone{border:2px dashed var(--text3);border-radius:var(--radius);padding:3rem;text-align:center;cursor:pointer;transition:border-color .2s}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--blue)}
+.drop-zone p{color:var(--text2);margin-bottom:.5rem}
+.drop-zone small{color:var(--text3)}
+
+/* Print */
+@media print{
+  body{background:#fff;color:#1a1a1a;font-size:11px}
+  header{position:static;background:#fff;border-bottom:2px solid #ccc}
+  .kpi,.chart-box,.table-section{border:1px solid #ddd;box-shadow:none}
+  .kpi::before{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .badge{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  select,input,.btn,#file-picker,.pagination,.toggle-group{display:none!important}
+}
+
+/* Responsive */
+@media(max-width:1100px){
+  .chart-row-3{grid-template-columns:1fr 1fr}
+  .chart-row-2{grid-template-columns:1fr}
+}
+@media(max-width:700px){
+  header{padding:1rem}
+  main{padding:1rem}
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .chart-row-3,.chart-row-2{grid-template-columns:1fr}
+  .chart-wrap{max-height:220px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">SC</div>
+    <div>
+      <h1>IAM Audit Dashboard</h1>
+      <span data-i18n="app.subtitle">Santander Consumer Finance &mdash; Identity &amp; Access Management</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="toggle-group">
+      <button class="toggle-btn" onclick="toggleTheme()" id="btn-theme" title="Toggle theme">
+        <span class="icon" id="theme-icon">&#9790;</span>
+      </button>
+      <button class="toggle-btn" onclick="toggleLang()" id="btn-lang" title="Switch language">
+        <span class="icon">&#127760;</span>
+        <span id="lang-label">EN</span>
+      </button>
+    </div>
+    <div class="filter-group">
+      <label data-i18n="filter.country">Pais</label>
+      <select id="f-country"><option value="" data-i18n="filter.all">Todos</option></select>
+    </div>
+    <div class="filter-group">
+      <label data-i18n="filter.type">Tipo</label>
+      <select id="f-type"><option value="" data-i18n="filter.all">Todos</option></select>
+    </div>
+    <div class="filter-group">
+      <label data-i18n="filter.risk">Riesgo</label>
+      <select id="f-risk"><option value="" data-i18n="filter.all">Todos</option></select>
+    </div>
+    <div class="filter-group">
+      <label data-i18n="filter.usage">Estado</label>
+      <select id="f-usage"><option value="" data-i18n="filter.all">Todos</option></select>
+    </div>
+    <div class="filter-group">
+      <label data-i18n="filter.decision">Decision</label>
+      <select id="f-decision"><option value="" data-i18n="filter.all">Todos</option></select>
+    </div>
+    <div class="filter-group">
+      <label data-i18n="filter.gim">GIM</label>
+      <select id="f-gim"><option value="" data-i18n="filter.all">Todos</option></select>
+    </div>
+    <button class="btn btn-outline" onclick="resetFilters()" data-i18n="btn.reset">Reset</button>
+    <button class="btn btn-outline" id="btn-load" onclick="document.getElementById('file-picker').click()" data-i18n="btn.load">Cargar JSON</button>
+    <input type="file" id="file-picker" accept=".json,.csv">
+  </div>
+</header>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <p data-i18n="loading.text">Cargando datos&hellip;</p>
+  <div id="drop-fallback" style="display:none">
+    <div class="drop-zone" id="drop-zone">
+      <p data-i18n-html="loading.drop">Arrastra <strong>iam.json</strong> aqui</p>
+      <small data-i18n-html="loading.hint">o haz clic en &laquo;Cargar JSON&raquo; en la cabecera</small>
+    </div>
+  </div>
+</div>
+
+<main id="dashboard">
+  <!-- KPIs -->
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <!-- Row 1: Risk | Usage | Password -->
+  <div class="section-title" data-i18n="section.risk">Distribucion de riesgo y estado</div>
+  <div class="chart-row chart-row-3">
+    <div class="chart-box">
+      <h3><span class="dot" style="background:var(--danger)"></span><span data-i18n="chart.risk">Nivel de Riesgo</span></h3>
+      <div class="chart-wrap"><canvas id="ch-risk"></canvas></div>
+    </div>
+    <div class="chart-box">
+      <h3><span class="dot" style="background:var(--blue)"></span><span data-i18n="chart.usage">Estado de Uso</span></h3>
+      <div class="chart-wrap"><canvas id="ch-usage"></canvas></div>
+    </div>
+    <div class="chart-box">
+      <h3><span class="dot" style="background:var(--purple)"></span><span data-i18n="chart.pwd">Estado de Password</span></h3>
+      <div class="chart-wrap"><canvas id="ch-pwd"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Row 2: Country | Risk x Country -->
+  <div class="section-title" data-i18n="section.country">Desglose por pais</div>
+  <div class="chart-row chart-row-2">
+    <div class="chart-box">
+      <h3><span class="dot" style="background:var(--cyan)"></span><span data-i18n="chart.country">Usuarios por Pais</span></h3>
+      <div class="chart-wrap chart-wrap-bar"><canvas id="ch-country"></canvas></div>
+    </div>
+    <div class="chart-box">
+      <h3><span class="dot" style="background:var(--orange)"></span><span data-i18n="chart.riskCountry">Riesgo por Pais</span></h3>
+      <div class="chart-wrap chart-wrap-bar"><canvas id="ch-risk-country"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Row 3: Decision | Azure | Type | GIM -->
+  <div class="section-title" data-i18n="section.decisions">Decisiones y sincronizacion Azure</div>
+  <div class="chart-row chart-row-3">
+    <div class="chart-box">
+      <h3><span class="dot" style="background:var(--amber)"></span><span data-i18n="chart.decision">Decisiones</span></h3>
+      <div class="chart-wrap chart-wrap-bar"><canvas id="ch-decision"></canvas></div>
+    </div>
+    <div class="chart-box">
+      <h3><span class="dot" style="background:var(--blue)"></span><span data-i18n="chart.azure">Caso Azure</span></h3>
+      <div class="chart-wrap"><canvas id="ch-azure"></canvas></div>
+    </div>
+    <div class="chart-box">
+      <h3><span class="dot" style="background:var(--green)"></span><span data-i18n="chart.type">Tipo de Usuario</span></h3>
+      <div class="chart-wrap"><canvas id="ch-type"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Row 4: GIM -->
+  <div class="section-title" data-i18n="section.gim">Cruce con fuente autoritativa (GIM/Workday)</div>
+  <div class="chart-row chart-row-2">
+    <div class="chart-box">
+      <h3><span class="dot" style="background:var(--orange)"></span><span data-i18n="chart.gim">Caso GIM</span></h3>
+      <div class="chart-wrap"><canvas id="ch-gim"></canvas></div>
+    </div>
+    <div class="chart-box">
+      <h3><span class="dot" style="background:var(--danger)"></span><span data-i18n="chart.gimAction">GIM - Acciones pendientes</span></h3>
+      <div class="chart-wrap chart-wrap-bar"><canvas id="ch-gim-action"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Legend / Methodology -->
+  <div class="section-title" data-i18n="section.legend">Leyenda y metodologia de calculo</div>
+  <div class="legend-section">
+    <h3 data-i18n="legend.title">Criterios de clasificacion y logica de evaluacion</h3>
+    <div class="legend-grid">
+
+      <!-- 1. Tipo de Usuario -->
+      <details class="leg">
+        <summary>
+          <span class="leg-icon" style="background:var(--blue)">T</span>
+          <span data-i18n="legend.type">Tipo de Usuario</span>
+        </summary>
+        <div class="leg-body" id="leg-body-type">
+          <p>Se determina por el <strong>primer caracter</strong> del identificador de cuenta (<code>sAMAccountName</code>):</p>
+          <table class="leg-table">
+            <thead><tr><th>Valor</th><th>Prefijo</th><th>Descripcion</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge badge-active">Workforce</span></td><td><code>N*</code></td><td>Empleado interno de la organizacion (nomina)</td></tr>
+              <tr><td><span class="badge badge-aging">External</span></td><td><code>X*</code></td><td>Colaborador externo, consultor o proveedor</td></tr>
+              <tr><td><span class="badge badge-never">Other</span></td><td>Otro</td><td>Cuenta de servicio u otro tipo no clasificado</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 2. Estado de Uso -->
+      <details class="leg">
+        <summary>
+          <span class="leg-icon" style="background:var(--green)">U</span>
+          <span data-i18n="legend.usage">Estado de Uso (EstadoUso)</span>
+        </summary>
+        <div class="leg-body" id="leg-body-usage">
+          <p>Refleja la <strong>actividad reciente</strong> de la cuenta. Se calcula a partir de <code>LastSeenDays</code> = dias transcurridos desde el ultimo inicio de sesion registrado.</p>
+          <table class="leg-table">
+            <thead><tr><th>Estado</th><th>Criterio</th><th>Interpretacion</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge badge-active">Active</span></td><td><span class="formula">LastSeenDays &le; 30</span></td><td>El usuario ha iniciado sesion en los ultimos 30 dias. Cuenta en uso normal.</td></tr>
+              <tr><td><span class="badge badge-aging">Aging</span></td><td><span class="formula">30 &lt; LastSeenDays &le; 90</span></td><td>Sin actividad entre 31 y 90 dias. Requiere seguimiento: posible baja temporal, vacaciones prolongadas o abandono gradual.</td></tr>
+              <tr><td><span class="badge badge-inactive">Inactive</span></td><td><span class="formula">LastSeenDays &gt; 90</span></td><td>Sin actividad en mas de 3 meses. Candidata a deshabilitacion. Riesgo de acceso latente no supervisado.</td></tr>
+              <tr><td><span class="badge badge-never">NeverUsed</span></td><td><span class="formula">Sin login &amp; AccountAgeDays &gt; 30</span></td><td>Cuenta creada hace mas de 30 dias que nunca ha sido utilizada. Posible aprovisionamiento erroneo o cuenta huerfana.</td></tr>
+              <tr><td><span class="badge" style="background:rgba(59,130,246,.12);color:#60a5fa">New</span></td><td><span class="formula">Sin login &amp; AccountAgeDays &le; 30</span></td><td>Cuenta reciente (menos de 30 dias) que aun no ha sido usada. Dentro del periodo normal de onboarding.</td></tr>
+            </tbody>
+          </table>
+          <div class="leg-flow">
+            <strong>Calculo de LastSeen:</strong> <code>MAX(ultimo_login_AD, ultimo_login_Azure)</code><br>
+            Se toma el <strong>maximo</strong> entre el atributo <code>lastLogon</code> de AD (consultado en todos los Domain Controllers) y el campo <code>LastSuccessfulSignIn</code> de Azure/Entra ID, para obtener la fecha de actividad mas reciente independientemente de la plataforma.
+          </div>
+        </div>
+      </details>
+
+      <!-- 3. Estado de Password -->
+      <details class="leg">
+        <summary>
+          <span class="leg-icon" style="background:var(--purple)">P</span>
+          <span data-i18n="legend.pwd">Estado de Password (EstadoPassword)</span>
+        </summary>
+        <div class="leg-body" id="leg-body-pwd">
+          <p>Evalua la <strong>antiguedad de la contrasena</strong> a partir de <code>PasswordAgeDays</code> = dias desde el ultimo cambio del atributo <code>pwdLastSet</code> en AD. Umbral configurado: <strong>45 dias</strong>.</p>
+          <table class="leg-table">
+            <thead><tr><th>Estado</th><th>Criterio</th><th>Interpretacion</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge badge-ok">OK</span></td><td><span class="formula">PasswordAgeDays &le; 45</span></td><td>Contrasena cambiada dentro del periodo aceptable. Cumple la politica de rotacion.</td></tr>
+              <tr><td><span class="badge badge-stale">Stale</span></td><td><span class="formula">PasswordAgeDays &gt; 45</span></td><td>Contrasena sin renovar en mas de 45 dias. Incumple la politica de rotacion y aumenta el riesgo de compromiso.</td></tr>
+              <tr><td><span class="badge badge-never">MustSet</span></td><td><span class="formula">pwdLastSet = null</span></td><td>El atributo de contrasena no tiene fecha. La cuenta nunca ha establecido una contrasena o se ha reseteado sin asignar una nueva.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 4. Nivel de Riesgo -->
+      <details class="leg">
+        <summary>
+          <span class="leg-icon" style="background:var(--danger)">R</span>
+          <span data-i18n="legend.risk">Nivel de Riesgo</span>
+        </summary>
+        <div class="leg-body" id="leg-body-risk">
+          <p>Evaluacion compuesta que cruza <strong>estado de uso</strong>, <strong>estado de password</strong> y <strong>sincronizacion Azure</strong>:</p>
+          <table class="leg-table">
+            <thead><tr><th>Nivel</th><th>Condicion</th><th>Justificacion</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge badge-alto">ALTO</span></td><td><span class="formula">Inactive + Stale</span></td><td>Cuenta sin uso &gt;90 dias con contrasena caducada. Maximo riesgo: acceso latente con credencial potencialmente comprometida. Prioridad de deshabilitacion.</td></tr>
+              <tr><td><span class="badge badge-medio">MEDIO</span></td><td><span class="formula">Stale (no Inactive)</span><br>o <span class="formula">NOAZURE</span></td><td>Contrasena caducada en cuenta activa/aging (riesgo de compromiso), o cuenta no sincronizada con Azure (brecha de visibilidad en la nube).</td></tr>
+              <tr><td><span class="badge badge-bajo">BAJO</span></td><td><span class="formula">Resto de casos</span></td><td>Cuenta activa con contrasena al dia y sincronizada con Azure. No requiere accion inmediata.</td></tr>
+            </tbody>
+          </table>
+          <div class="leg-flow">
+            <strong>Orden de evaluacion:</strong> Se evalua primero NOAZURE (fuerza MEDIO), luego Inactive+Stale (ALTO), despues Stale solo (MEDIO), y finalmente el resto (BAJO). La primera condicion que coincide determina el nivel.
+          </div>
+        </div>
+      </details>
+
+      <!-- 5. Decision -->
+      <details class="leg">
+        <summary>
+          <span class="leg-icon" style="background:var(--amber)">D</span>
+          <span data-i18n="legend.decision">Decision (Accion Recomendada)</span>
+        </summary>
+        <div class="leg-body" id="leg-body-decision">
+          <p>Accion sugerida basada en la combinacion de <code>EstadoUso</code> + <code>EstadoPassword</code>, con excepcion para cuentas sin Azure:</p>
+          <table class="leg-table">
+            <thead><tr><th>Decision</th><th>Combinacion</th><th>Descripcion</th></tr></thead>
+            <tbody>
+              <tr><td style="color:#4ade80">Mantener</td><td><span class="formula">Active + OK</span></td><td>Cuenta saludable. No requiere accion.</td></tr>
+              <tr><td style="color:#facc15">Forzar cambio</td><td><span class="formula">Active + Stale</span></td><td>Cuenta en uso activo pero con contrasena expirada. Forzar renovacion de credencial.</td></tr>
+              <tr><td style="color:#fb923c">Revisar</td><td><span class="formula">Aging + Stale</span></td><td>Cuenta con uso decreciente y contrasena caducada. Contactar al responsable para confirmar necesidad.</td></tr>
+              <tr><td style="color:#f87171">Deshabilitar</td><td><span class="formula">Inactive + Stale</span></td><td>Cuenta abandonada con credencial antigua. Deshabilitar de forma inmediata.</td></tr>
+              <tr><td style="color:#94a3b8">Revisar/Deshabilitar</td><td><span class="formula">NeverUsed + *</span></td><td>Cuenta nunca utilizada. Verificar si fue aprovisionada por error o si el onboarding no se completo.</td></tr>
+              <tr><td style="color:#c084fc">Revisar sincronizacion</td><td><span class="formula">CasoAzure = NOAZURE</span></td><td>Cuenta existe en AD pero no en Azure/Entra ID. Verificar reglas de sincronizacion de Azure AD Connect.</td></tr>
+              <tr><td style="color:#64748b">Analizar</td><td>Otra combinacion</td><td>Caso no cubierto por las reglas anteriores. Requiere revision manual (p.ej. Active+MustSet, Aging+OK).</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 6. Caso Azure -->
+      <details class="leg">
+        <summary>
+          <span class="leg-icon" style="background:var(--cyan)">A</span>
+          <span data-i18n="legend.azure">Caso Azure (CasoAzure)</span>
+        </summary>
+        <div class="leg-body" id="leg-body-azure">
+          <p>Clasifica el estado de la cuenta en <strong>Azure AD / Entra ID</strong> cruzando existencia y actividad de login:</p>
+          <table class="leg-table">
+            <thead><tr><th>Caso</th><th>Criterio</th><th>Descripcion</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge badge-ok">AZUREOK</span></td><td><span class="formula">Existe en Azure &amp; login &le; 45d</span></td><td>Cuenta sincronizada con actividad reciente en la nube. Estado optimo.</td></tr>
+              <tr><td><span class="badge badge-aging">PWDKOAZUREOK</span></td><td><span class="formula">Existe en Azure &amp; login &gt; 45d</span></td><td>Sincronizada pero sin login reciente en Azure. Puede usar solo AD on-premise o tener inactividad en servicios cloud.</td></tr>
+              <tr><td><span class="badge badge-inactive">NO_ACTIVITY</span></td><td><span class="formula">Existe en Azure &amp; sin login</span></td><td>Cuenta replicada a Azure pero nunca ha iniciado sesion en servicios cloud. Posible licencia asignada sin uso.</td></tr>
+              <tr><td><span class="badge badge-never">NOAZURE</span></td><td><span class="formula">No existe en Azure</span></td><td>Cuenta solo en AD on-premise, sin replica en Entra ID. Revisar filtro de sincronizacion de Azure AD Connect.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 7. Security Score -->
+      <details class="leg">
+        <summary>
+          <span class="leg-icon" style="background:var(--green)">S</span>
+          <span data-i18n="legend.score">Security Score (KPI)</span>
+        </summary>
+        <div class="leg-body" id="leg-body-score">
+          <p>Indicador global de <strong>salud de seguridad IAM</strong>, escala 0&ndash;100:</p>
+          <div class="leg-flow">
+            <strong>Formula:</strong> <code>Score = 100 &minus; ((n_ALTO &times; 3 + n_MEDIO &times; 2) / (total &times; 3)) &times; 100</code><br><br>
+            Cada cuenta se pondera segun su riesgo: ALTO pesa 3, MEDIO pesa 2, BAJO pesa 0. El maximo teorico de riesgo seria que todas las cuentas fueran ALTO (score = 0). Si todas son BAJO, el score es 100.
+          </div>
+          <table class="leg-table">
+            <thead><tr><th>Rango</th><th>Interpretacion</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge badge-ok">&ge; 80</span></td><td><strong>Estado saludable.</strong> El entorno IAM esta bien controlado. La mayoria de cuentas son activas con contrasena al dia.</td></tr>
+              <tr><td><span class="badge badge-aging">60 &ndash; 79</span></td><td><strong>Requiere atencion.</strong> Proporcion significativa de cuentas con riesgo medio/alto. Planificar campana de limpieza.</td></tr>
+              <tr><td><span class="badge badge-alto">&lt; 60</span></td><td><strong>Accion urgente.</strong> Alto volumen de cuentas inactivas o con contrasenas caducadas. Riesgo elevado de acceso no autorizado.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <!-- 8. Caso GIM -->
+      <details class="leg">
+        <summary>
+          <span class="leg-icon" style="background:var(--orange)">G</span>
+          <span data-i18n="legend.gim">Caso GIM (Fuente Autoritativa)</span>
+        </summary>
+        <div class="leg-body" id="leg-body-gim">
+          <p>Clasifica el estado de cada cuenta cruzando la <strong>existencia y estado en GIM/Workday</strong> (fuente autoritativa) con la <strong>existencia en AD</strong>. El control es <strong>AD-centrico</strong>: solo se analizan usuarios presentes en AD.</p>
+          <table class="leg-table">
+            <thead><tr><th>Caso</th><th>En GIM?</th><th>GIM Activo?</th><th>Descripcion</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge badge-gim-ok">OK</span></td><td>Si</td><td>Si</td><td>Caso normal. El usuario esta activo en la fuente autoritativa y tiene cuenta en AD.</td></tr>
+              <tr><td><span class="badge badge-gim-analizar">ANALIZAR</span></td><td>No</td><td>&mdash;</td><td>Cuenta en AD sin registro en GIM/Workday. Posible cuenta huerfana o servicio no gestionado.</td></tr>
+              <tr><td><span class="badge badge-gim-gda">GDA</span></td><td>Si</td><td>No</td><td><strong>Accion requerida:</strong> Baja en GIM pero la cuenta sigue activa en AD. Debe deshabilitarse/eliminarse de AD.</td></tr>
+            </tbody>
+          </table>
+          <div class="leg-flow">
+            <strong>Cruce:</strong> Se usa <code>PSIDUSUARIO</code> (GIM) = <code>sAMAccountName</code> (AD) como clave de enlace, comparacion case-insensitive.<br>
+            <strong>Fuente:</strong> GIM es el repositorio intermedio entre Workday (RRHH) y los sistemas finales (AD, Azure). Los campos adicionales obtenidos son <code>Manager</code>, <code>ManagerMail</code> y <code>Departamento</code>.
+          </div>
+        </div>
+      </details>
+
+      <!-- 9. Origen de Datos -->
+      <details class="leg">
+        <summary>
+          <span class="leg-icon" style="background:#64748b">O</span>
+          <span data-i18n="legend.origin">Origen y Flujo de Datos</span>
+        </summary>
+        <div class="leg-body" id="leg-body-origin">
+          <p>Los datos proceden de <strong>cuatro fuentes</strong> que se cruzan en el proceso de consolidacion:</p>
+          <table class="leg-table">
+            <thead><tr><th>Fuente</th><th>Que aporta</th><th>Metodo de extraccion</th></tr></thead>
+            <tbody>
+              <tr><td>AD SCFES</td><td>Usuarios del dominio <code>scfes.scf.corp</code> (ES, CH)</td><td>Consulta LDAP con filtro <code>UAC=512</code> (cuentas activas), excluyendo <code>NOFIM</code> y <code>NOO365</code>. Se consultan <strong>todos los DCs</strong> para obtener el <code>lastLogon</code> real (maximo).</td></tr>
+              <tr><td>AD SCEU</td><td>Usuarios del dominio <code>sceuadfrp.sceu.corp</code> (FR, PT, IT, GS, AT, BE, CA, GR, MS, NL, NO, PL)</td><td>Mismo metodo que SCFES.</td></tr>
+              <tr><td>Azure / Entra ID</td><td><code>LastSuccessfulSignIn</code>, estado de sincronizacion</td><td>API Microsoft Graph via modulo <code>Az.Accounts</code>.</td></tr>
+              <tr><td>GIM / Workday</td><td>Manager, ManagerMail, Departamento, estado activo (<code>USER_ACTIVE</code>)</td><td>Fichero <code>Usuariosgim.csv</code> (delimitador <code>;</code>, UTF-8 BOM). GIM es el repositorio intermedio entre Workday (RRHH) y los sistemas finales. Clave de cruce: <code>PSIDUSUARIO</code> = <code>sAMAccountName</code> (case-insensitive).</td></tr>
+            </tbody>
+          </table>
+          <div class="leg-flow">
+            <strong>Pipeline:</strong> <code>ad_final.py</code> (extrae AD) &rarr; <code>azure.ps1</code> (extrae Azure) &rarr; <code>consolidado.ps1</code> (cruza AD + Azure + GIM, clasifica y genera <code>resultado_final.json</code>) &rarr; <code>dashboard.html</code> (visualiza)
+          </div>
+          <p style="margin-top:.5rem"><strong>Pais:</strong> Se determina a partir de la <strong>OU</strong> del DN del usuario en AD (p.ej. <code>OU=IT,...</code> = Italia). Para el dominio SCFES, se distingue Suiza por el dominio de correo <code>@santanderconsumerfinance.ch</code>.</p>
+        </div>
+      </details>
+
+    </div>
+  </div>
+
+  <!-- Data Table -->
+  <div class="section-title" data-i18n="section.users">Detalle de usuarios</div>
+  <div class="table-section">
+    <div class="table-header">
+      <h3 id="table-title">Usuarios</h3>
+      <div class="table-controls">
+        <input type="text" id="table-search" data-i18n-placeholder="table.search" placeholder="Buscar usuario, UPN, pais...">
+        <button class="btn btn-primary" onclick="exportCSV()" data-i18n="btn.export">Exportar CSV</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <span id="page-info"></span>
+      <div class="page-btns">
+        <button id="pg-first" onclick="goPage(0)">&laquo;</button>
+        <button id="pg-prev" onclick="goPage(currentPage-1)">&lsaquo;</button>
+        <button id="pg-next" onclick="goPage(currentPage+1)">&rsaquo;</button>
+        <button id="pg-last" onclick="goPage(totalPages-1)">&raquo;</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p data-i18n-html="footer">IAM Audit Dashboard &copy; 2025 &mdash; Santander Consumer Finance &mdash; Generado automaticamente desde <code>iam.json</code></p>
+</footer>
+
+<script>
+/* ── I18N ───────────────────────────────────────────────── */
+let currentLang = 'es';
+
+const I18N = {
+  es: {
+    'app.subtitle': 'Santander Consumer Finance \u2014 Identity & Access Management',
+    'filter.country':'Pais','filter.type':'Tipo','filter.risk':'Riesgo',
+    'filter.usage':'Estado','filter.decision':'Decision','filter.gim':'GIM','filter.all':'Todos',
+    'btn.reset':'Reset','btn.load':'Cargar JSON','btn.export':'Exportar CSV',
+    'loading.text':'Cargando datos\u2026',
+    'loading.drop':'Arrastra <strong>iam.json</strong> aqui',
+    'loading.hint':'o haz clic en \u00abCargar JSON\u00bb en la cabecera',
+    'loading.notfound':'No se encontro el JSON. Carga el fichero manualmente:',
+    'section.risk':'Distribucion de riesgo y estado',
+    'section.country':'Desglose por pais',
+    'section.decisions':'Decisiones y sincronizacion Azure',
+    'section.gim':'Cruce con fuente autoritativa (GIM/Workday)',
+    'section.legend':'Leyenda y metodologia de calculo',
+    'section.users':'Detalle de usuarios',
+    'chart.risk':'Nivel de Riesgo','chart.usage':'Estado de Uso',
+    'chart.pwd':'Estado de Password','chart.country':'Usuarios por Pais',
+    'chart.riskCountry':'Riesgo por Pais','chart.decision':'Decisiones',
+    'chart.azure':'Caso Azure','chart.type':'Tipo de Usuario',
+    'chart.gim':'Caso GIM','chart.gimAction':'GIM - Acciones pendientes',
+    'legend.title':'Criterios de clasificacion y logica de evaluacion',
+    'legend.type':'Tipo de Usuario','legend.usage':'Estado de Uso (EstadoUso)',
+    'legend.pwd':'Estado de Password (EstadoPassword)','legend.risk':'Nivel de Riesgo',
+    'legend.decision':'Decision (Accion Recomendada)','legend.azure':'Caso Azure (CasoAzure)',
+    'legend.score':'Security Score (KPI)','legend.gim':'Caso GIM (Fuente Autoritativa)',
+    'legend.origin':'Origen y Flujo de Datos',
+    'table.title':'Usuarios','table.records':'registros',
+    'table.search':'Buscar usuario, UPN, pais...',
+    'table.page':'Pagina','table.of':'de',
+    'kpi.total':'Total Usuarios','kpi.score':'Security Score',
+    'kpi.high':'Riesgo ALTO','kpi.medium':'Riesgo MEDIO',
+    'kpi.active':'Usuarios Activos','kpi.stale':'Password Stale',
+    'kpi.noazure':'Sin Azure Sync',
+    'kpi.gda':'Pendientes baja AD',
+    'kpi.healthy':'Estado saludable','kpi.attention':'Requiere atencion',
+    'kpi.urgent':'Accion urgente necesaria','kpi.of_total':'del total',
+    'kpi.need_change':'necesitan cambio','kpi.check_sync':'Revisar sincronizacion',
+    'kpi.all_synced':'Todo sincronizado',
+    'col.user':'Usuario','col.type':'Tipo','col.country':'Pais',
+    'col.risk':'Riesgo','col.usage':'Uso','col.password':'Password',
+    'col.decision':'Decision','col.daysSinceLogin':'Dias sin login',
+    'col.daysPwd':'Dias pwd','col.azure':'Azure','col.azureCase':'Caso Azure',
+    'col.casoGIM':'Caso GIM','col.manager':'Manager','col.departamento':'Departamento',
+    'footer':'IAM Audit Dashboard \u00a9 2025 \u2014 Santander Consumer Finance \u2014 Generado automaticamente desde <code>iam.json</code>',
+  },
+  en: {
+    'app.subtitle': 'Santander Consumer Finance \u2014 Identity & Access Management',
+    'filter.country':'Country','filter.type':'Type','filter.risk':'Risk',
+    'filter.usage':'Status','filter.decision':'Decision','filter.gim':'GIM','filter.all':'All',
+    'btn.reset':'Reset','btn.load':'Load JSON','btn.export':'Export CSV',
+    'loading.text':'Loading data\u2026',
+    'loading.drop':'Drag <strong>iam.json</strong> here',
+    'loading.hint':'or click "Load JSON" in the header',
+    'loading.notfound':'JSON not found. Load the file manually:',
+    'section.risk':'Risk and status distribution',
+    'section.country':'Breakdown by country',
+    'section.decisions':'Decisions and Azure synchronization',
+    'section.gim':'Cross-reference with authoritative source (GIM/Workday)',
+    'section.legend':'Legend and calculation methodology',
+    'section.users':'User detail',
+    'chart.risk':'Risk Level','chart.usage':'Usage Status',
+    'chart.pwd':'Password Status','chart.country':'Users by Country',
+    'chart.riskCountry':'Risk by Country','chart.decision':'Decisions',
+    'chart.azure':'Azure Case','chart.type':'User Type',
+    'chart.gim':'GIM Case','chart.gimAction':'GIM - Pending Actions',
+    'legend.title':'Classification criteria and evaluation logic',
+    'legend.type':'User Type','legend.usage':'Usage Status (EstadoUso)',
+    'legend.pwd':'Password Status (EstadoPassword)','legend.risk':'Risk Level',
+    'legend.decision':'Decision (Recommended Action)','legend.azure':'Azure Case (CasoAzure)',
+    'legend.score':'Security Score (KPI)','legend.gim':'GIM Case (Authoritative Source)',
+    'legend.origin':'Data Source and Flow',
+    'table.title':'Users','table.records':'records',
+    'table.search':'Search user, UPN, country...',
+    'table.page':'Page','table.of':'of',
+    'kpi.total':'Total Users','kpi.score':'Security Score',
+    'kpi.high':'HIGH Risk','kpi.medium':'MEDIUM Risk',
+    'kpi.active':'Active Users','kpi.stale':'Stale Passwords',
+    'kpi.noazure':'No Azure Sync',
+    'kpi.gda':'Pending AD deletion',
+    'kpi.healthy':'Healthy status','kpi.attention':'Requires attention',
+    'kpi.urgent':'Urgent action needed','kpi.of_total':'of total',
+    'kpi.need_change':'need change','kpi.check_sync':'Check synchronization',
+    'kpi.all_synced':'All synchronized',
+    'col.user':'User','col.type':'Type','col.country':'Country',
+    'col.risk':'Risk','col.usage':'Usage','col.password':'Password',
+    'col.decision':'Decision','col.daysSinceLogin':'Days since login',
+    'col.daysPwd':'Days pwd','col.azure':'Azure','col.azureCase':'Azure Case',
+    'col.casoGIM':'GIM Case','col.manager':'Manager','col.departamento':'Department',
+    'footer':'IAM Audit Dashboard \u00a9 2025 \u2014 Santander Consumer Finance \u2014 Auto-generated from <code>iam.json</code>',
+  }
+};
+
+function t(key) { return I18N[currentLang][key] || I18N.es[key] || key; }
+
+/* ── Legend English Bodies ──────────────────────────────── */
+const LEGEND_EN = {
+  type: `
+          <p>Determined by the <strong>first character</strong> of the account identifier (<code>sAMAccountName</code>):</p>
+          <table class="leg-table">
+            <thead><tr><th>Value</th><th>Prefix</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge badge-active">Workforce</span></td><td><code>N*</code></td><td>Internal employee of the organization (payroll)</td></tr>
+              <tr><td><span class="badge badge-aging">External</span></td><td><code>X*</code></td><td>External collaborator, consultant or vendor</td></tr>
+              <tr><td><span class="badge badge-never">Other</span></td><td>Other</td><td>Service account or other unclassified type</td></tr>
+            </tbody>
+          </table>`,
+  usage: `
+          <p>Reflects the <strong>recent activity</strong> of the account. Calculated from <code>LastSeenDays</code> = days elapsed since the last recorded login.</p>
+          <table class="leg-table">
+            <thead><tr><th>Status</th><th>Criteria</th><th>Interpretation</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge badge-active">Active</span></td><td><span class="formula">LastSeenDays &le; 30</span></td><td>User logged in within the last 30 days. Account in normal use.</td></tr>
+              <tr><td><span class="badge badge-aging">Aging</span></td><td><span class="formula">30 &lt; LastSeenDays &le; 90</span></td><td>No activity between 31 and 90 days. Requires follow-up: possible temporary leave, extended vacation or gradual abandonment.</td></tr>
+              <tr><td><span class="badge badge-inactive">Inactive</span></td><td><span class="formula">LastSeenDays &gt; 90</span></td><td>No activity for more than 3 months. Candidate for disabling. Risk of unsupervised latent access.</td></tr>
+              <tr><td><span class="badge badge-never">NeverUsed</span></td><td><span class="formula">No login &amp; AccountAgeDays &gt; 30</span></td><td>Account created more than 30 days ago that has never been used. Possible erroneous provisioning or orphan account.</td></tr>
+              <tr><td><span class="badge" style="background:rgba(59,130,246,.12);color:#60a5fa">New</span></td><td><span class="formula">No login &amp; AccountAgeDays &le; 30</span></td><td>Recent account (less than 30 days) not yet used. Within the normal onboarding period.</td></tr>
+            </tbody>
+          </table>
+          <div class="leg-flow">
+            <strong>LastSeen calculation:</strong> <code>MAX(last_login_AD, last_login_Azure)</code><br>
+            The <strong>maximum</strong> is taken between the <code>lastLogon</code> attribute from AD (queried across all Domain Controllers) and the <code>LastSuccessfulSignIn</code> field from Azure/Entra ID, to obtain the most recent activity date regardless of platform.
+          </div>`,
+  pwd: `
+          <p>Evaluates <strong>password age</strong> from <code>PasswordAgeDays</code> = days since the last change of the <code>pwdLastSet</code> attribute in AD. Configured threshold: <strong>45 days</strong>.</p>
+          <table class="leg-table">
+            <thead><tr><th>Status</th><th>Criteria</th><th>Interpretation</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge badge-ok">OK</span></td><td><span class="formula">PasswordAgeDays &le; 45</span></td><td>Password changed within the acceptable period. Complies with rotation policy.</td></tr>
+              <tr><td><span class="badge badge-stale">Stale</span></td><td><span class="formula">PasswordAgeDays &gt; 45</span></td><td>Password not renewed in more than 45 days. Violates rotation policy and increases compromise risk.</td></tr>
+              <tr><td><span class="badge badge-never">MustSet</span></td><td><span class="formula">pwdLastSet = null</span></td><td>The password attribute has no date. The account has never set a password or it was reset without assigning a new one.</td></tr>
+            </tbody>
+          </table>`,
+  risk: `
+          <p>Composite evaluation crossing <strong>usage status</strong>, <strong>password status</strong> and <strong>Azure synchronization</strong>:</p>
+          <table class="leg-table">
+            <thead><tr><th>Level</th><th>Condition</th><th>Justification</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge badge-alto">ALTO</span></td><td><span class="formula">Inactive + Stale</span></td><td>Account unused &gt;90 days with expired password. Maximum risk: latent access with potentially compromised credential. Priority for disabling.</td></tr>
+              <tr><td><span class="badge badge-medio">MEDIO</span></td><td><span class="formula">Stale (not Inactive)</span><br>or <span class="formula">NOAZURE</span></td><td>Expired password on active/aging account (compromise risk), or account not synced with Azure (cloud visibility gap).</td></tr>
+              <tr><td><span class="badge badge-bajo">BAJO</span></td><td><span class="formula">All other cases</span></td><td>Active account with up-to-date password and synced with Azure. No immediate action required.</td></tr>
+            </tbody>
+          </table>
+          <div class="leg-flow">
+            <strong>Evaluation order:</strong> NOAZURE is evaluated first (forces MEDIO), then Inactive+Stale (ALTO), then Stale alone (MEDIO), and finally the rest (BAJO). The first matching condition determines the level.
+          </div>`,
+  decision: `
+          <p>Suggested action based on the combination of <code>EstadoUso</code> + <code>EstadoPassword</code>, with exception for accounts without Azure:</p>
+          <table class="leg-table">
+            <thead><tr><th>Decision</th><th>Combination</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td style="color:#4ade80">Mantener</td><td><span class="formula">Active + OK</span></td><td>Healthy account. No action required.</td></tr>
+              <tr><td style="color:#facc15">Forzar cambio</td><td><span class="formula">Active + Stale</span></td><td>Account in active use but with expired password. Force credential renewal.</td></tr>
+              <tr><td style="color:#fb923c">Revisar</td><td><span class="formula">Aging + Stale</span></td><td>Account with decreasing usage and expired password. Contact the owner to confirm need.</td></tr>
+              <tr><td style="color:#f87171">Deshabilitar</td><td><span class="formula">Inactive + Stale</span></td><td>Abandoned account with old credential. Disable immediately.</td></tr>
+              <tr><td style="color:#94a3b8">Revisar/Deshabilitar</td><td><span class="formula">NeverUsed + *</span></td><td>Account never used. Verify if it was provisioned by mistake or if onboarding was not completed.</td></tr>
+              <tr><td style="color:#c084fc">Revisar sincronizacion</td><td><span class="formula">CasoAzure = NOAZURE</span></td><td>Account exists in AD but not in Azure/Entra ID. Verify Azure AD Connect synchronization rules.</td></tr>
+              <tr><td style="color:#64748b">Analizar</td><td>Other combination</td><td>Case not covered by previous rules. Requires manual review (e.g. Active+MustSet, Aging+OK).</td></tr>
+            </tbody>
+          </table>`,
+  azure: `
+          <p>Classifies the account status in <strong>Azure AD / Entra ID</strong> by crossing existence and login activity:</p>
+          <table class="leg-table">
+            <thead><tr><th>Case</th><th>Criteria</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge badge-ok">AZUREOK</span></td><td><span class="formula">Exists in Azure &amp; login &le; 45d</span></td><td>Synced account with recent cloud activity. Optimal status.</td></tr>
+              <tr><td><span class="badge badge-aging">PWDKOAZUREOK</span></td><td><span class="formula">Exists in Azure &amp; login &gt; 45d</span></td><td>Synced but no recent Azure login. May use only on-premise AD or have cloud service inactivity.</td></tr>
+              <tr><td><span class="badge badge-inactive">NO_ACTIVITY</span></td><td><span class="formula">Exists in Azure &amp; no login</span></td><td>Account replicated to Azure but has never logged into cloud services. Possible assigned license without use.</td></tr>
+              <tr><td><span class="badge badge-never">NOAZURE</span></td><td><span class="formula">Not in Azure</span></td><td>Account only in on-premise AD, not replicated to Entra ID. Review Azure AD Connect synchronization filter.</td></tr>
+            </tbody>
+          </table>`,
+  score: `
+          <p>Global <strong>IAM security health</strong> indicator, scale 0&ndash;100:</p>
+          <div class="leg-flow">
+            <strong>Formula:</strong> <code>Score = 100 &minus; ((n_ALTO &times; 3 + n_MEDIO &times; 2) / (total &times; 3)) &times; 100</code><br><br>
+            Each account is weighted by its risk: ALTO weighs 3, MEDIO weighs 2, BAJO weighs 0. The theoretical maximum risk would be all accounts at ALTO (score = 0). If all are BAJO, the score is 100.
+          </div>
+          <table class="leg-table">
+            <thead><tr><th>Range</th><th>Interpretation</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge badge-ok">&ge; 80</span></td><td><strong>Healthy status.</strong> The IAM environment is well controlled. Most accounts are active with up-to-date passwords.</td></tr>
+              <tr><td><span class="badge badge-aging">60 &ndash; 79</span></td><td><strong>Requires attention.</strong> Significant proportion of accounts with medium/high risk. Plan a cleanup campaign.</td></tr>
+              <tr><td><span class="badge badge-alto">&lt; 60</span></td><td><strong>Urgent action.</strong> High volume of inactive accounts or expired passwords. Elevated risk of unauthorized access.</td></tr>
+            </tbody>
+          </table>`,
+  origin: `
+          <p>Data comes from <strong>four sources</strong> that are cross-referenced in the consolidation process:</p>
+          <table class="leg-table">
+            <thead><tr><th>Source</th><th>What it provides</th><th>Extraction method</th></tr></thead>
+            <tbody>
+              <tr><td>AD SCFES</td><td>Users from domain <code>scfes.scf.corp</code> (ES, CH)</td><td>LDAP query with <code>UAC=512</code> filter (active accounts), excluding <code>NOFIM</code> and <code>NOO365</code>. <strong>All DCs</strong> are queried to get the real <code>lastLogon</code> (maximum).</td></tr>
+              <tr><td>AD SCEU</td><td>Users from domain <code>sceuadfrp.sceu.corp</code> (FR, PT, IT, GS, AT, BE, CA, GR, MS, NL, NO, PL)</td><td>Same method as SCFES.</td></tr>
+              <tr><td>Azure / Entra ID</td><td><code>LastSuccessfulSignIn</code>, synchronization status</td><td>Microsoft Graph API via <code>Az.Accounts</code> module.</td></tr>
+              <tr><td>GIM / Workday</td><td>Manager, ManagerMail, Department, active status (<code>USER_ACTIVE</code>)</td><td>File <code>Usuariosgim.csv</code> (delimiter <code>;</code>, UTF-8 BOM). GIM is the intermediary repository between Workday (HR) and target systems. Cross-reference key: <code>PSIDUSUARIO</code> = <code>sAMAccountName</code> (case-insensitive).</td></tr>
+            </tbody>
+          </table>
+          <div class="leg-flow">
+            <strong>Pipeline:</strong> <code>ad_final.py</code> (extracts AD) &rarr; <code>azure.ps1</code> (extracts Azure) &rarr; <code>consolidado.ps1</code> (cross-references AD + Azure + GIM, classifies and generates <code>resultado_final.json</code>) &rarr; <code>dashboard.html</code> (visualizes)
+          </div>
+          <p style="margin-top:.5rem"><strong>Country:</strong> Determined from the <strong>OU</strong> in the user's DN in AD (e.g. <code>OU=IT,...</code> = Italy). For the SCFES domain, Switzerland is distinguished by the email domain <code>@santanderconsumerfinance.ch</code>.</p>`,
+  gim: `
+          <p>Classifies the status of each account by cross-referencing <strong>existence and status in GIM/Workday</strong> (authoritative source) with <strong>existence in AD</strong>. The control is <strong>AD-centric</strong>: only users present in AD are analyzed.</p>
+          <table class="leg-table">
+            <thead><tr><th>Case</th><th>In GIM?</th><th>GIM Active?</th><th>Description</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge badge-gim-ok">OK</span></td><td>Yes</td><td>Yes</td><td>Normal case. User is active in the authoritative source and has an AD account.</td></tr>
+              <tr><td><span class="badge badge-gim-analizar">ANALIZAR</span></td><td>No</td><td>&mdash;</td><td>Account in AD without a GIM/Workday record. Possible orphan or unmanaged service account.</td></tr>
+              <tr><td><span class="badge badge-gim-gda">GDA</span></td><td>Yes</td><td>No</td><td><strong>Action required:</strong> Terminated in GIM but account still active in AD. Must be disabled/deleted from AD.</td></tr>
+            </tbody>
+          </table>
+          <div class="leg-flow">
+            <strong>Cross-reference:</strong> Uses <code>PSIDUSUARIO</code> (GIM) = <code>sAMAccountName</code> (AD) as the linking key, case-insensitive comparison.<br>
+            <strong>Source:</strong> GIM is the intermediary repository between Workday (HR) and target systems (AD, Azure). Additional fields obtained are <code>Manager</code>, <code>ManagerMail</code> and <code>Department</code>.
+          </div>`
+};
+
+let LEGEND_ES = {};
+
+/* ── State ──────────────────────────────────────────────── */
+let RAW = [], filtered = [], searched = [], charts = {};
+let currentPage = 0, totalPages = 0;
+const PAGE_SIZE = 30;
+
+function getCols() {
+  return [
+    {key:'Usuario',label:t('col.user')},
+    {key:'Tipo',label:t('col.type')},
+    {key:'Pais',label:t('col.country')},
+    {key:'Riesgo',label:t('col.risk')},
+    {key:'EstadoUso',label:t('col.usage')},
+    {key:'EstadoPassword',label:t('col.password')},
+    {key:'Decision',label:t('col.decision')},
+    {key:'CasoGIM',label:t('col.casoGIM')},
+    {key:'Manager',label:t('col.manager')},
+    {key:'Departamento',label:t('col.departamento')},
+    {key:'LastSeenDays',label:t('col.daysSinceLogin')},
+    {key:'PasswordAgeDays',label:t('col.daysPwd')},
+    {key:'AzureStatus',label:t('col.azure')},
+    {key:'CasoAzure',label:t('col.azureCase')}
+  ];
+}
+
+let sortCol = 'Riesgo', sortAsc = true;
+
+/* ── Colors ─────────────────────────────────────────────── */
+const C = {
+  risk:  {BAJO:'#22c55e', MEDIO:'#eab308', ALTO:'#ef4444'},
+  usage: {Active:'#22c55e', Aging:'#eab308', Inactive:'#ef4444', NeverUsed:'#6b7280', New:'#3b82f6'},
+  pwd:   {OK:'#22c55e', Stale:'#ef4444', MustSet:'#6b7280'},
+  type:  {Workforce:'#3b82f6', External:'#f97316', Other:'#8b5cf6'},
+  azure: {AZUREOK:'#22c55e', PWDKOAZUREOK:'#eab308', NO_ACTIVITY:'#ef4444', NOAZURE:'#6b7280'},
+  gim:   {OK:'#22c55e', ANALIZAR:'#6b7280', GDA:'#ef4444', OKD:'#3b82f6', HABILITAR:'#eab308'},
+  bar:   ['#3b82f6','#6366f1','#8b5cf6','#a855f7','#c084fc','#06b6d4','#14b8a6','#22c55e','#84cc16','#eab308','#f97316','#ef4444','#ec4899','#f43f5e','#64748b']
+};
+
+/* ── Theme-aware chart colors ──────────────────────────── */
+function TC() {
+  const light = document.documentElement.dataset.theme === 'light';
+  return {
+    legend: light ? '#4a5568' : '#94a3b8',
+    tick: light ? '#1a202c' : '#e2e8f0',
+    tick2: light ? '#718096' : '#64748b',
+    grid: light ? 'rgba(0,0,0,.08)' : 'rgba(255,255,255,.04)',
+    ttBg: light ? '#ffffff' : '#1e293b',
+    ttBorder: light ? 'rgba(0,0,0,.1)' : 'rgba(255,255,255,.1)',
+    ttTitle: light ? '#1a202c' : '#e2e8f0',
+    ttBody: light ? '#4a5568' : '#cbd5e1',
+    label: light ? '#4a5568' : '#94a3b8',
+    center: light ? '#1a202c' : '#e2e8f0',
+    centerSub: light ? '#718096' : '#64748b',
+  };
+}
+
+/* ── Init ───────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', init);
+
+async function init() {
+  // Capture Spanish legend bodies from DOM
+  document.querySelectorAll('.leg-body[id]').forEach(el => {
+    const key = el.id.replace('leg-body-','');
+    LEGEND_ES[key] = el.innerHTML;
+  });
+
+  setupFileHandlers();
+  try {
+    const paths = ['iam.json','output/resultado_final.json','resultado_final.json'];
+    let data = null;
+    for (const p of paths) {
+      try { const r = await fetch(p); if (r.ok) { data = await r.json(); break; } } catch(_){}
+    }
+    if (data) { boot(data); return; }
+  } catch(_){}
+  document.getElementById('drop-fallback').style.display = 'block';
+  document.querySelector('#loading p').textContent = t('loading.notfound');
+}
+
+function setupFileHandlers() {
+  const dz = document.getElementById('drop-zone');
+  const fp = document.getElementById('file-picker');
+  if (dz) {
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+    dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
+    dz.addEventListener('click', () => fp.click());
+  }
+  fp.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+}
+
+function handleFile(f) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    let data;
+    if (f.name.endsWith('.csv')) {
+      data = parseCSV(ev.target.result);
+    } else {
+      data = JSON.parse(ev.target.result);
+    }
+    boot(data);
+  };
+  reader.readAsText(f, 'utf-8');
+}
+
+function parseCSV(text) {
+  const lines = text.replace(/^\uFEFF/,'').split(/\r?\n/).filter(l=>l.trim());
+  const hdr = lines[0].split(';');
+  return lines.slice(1).map(l => {
+    const v = l.split(';');
+    const o = {};
+    hdr.forEach((h,i) => {
+      let val = (v[i]||'').trim();
+      if (/^\d+$/.test(val) && ['LastSeenDays','PasswordAgeDays','AccountAgeDays'].includes(h)) val = parseInt(val,10);
+      o[h] = val;
+    });
+    return o;
+  });
+}
+
+function boot(data) {
+  RAW = data.map(r => ({
+    ...r,
+    LastSeenDays: parseInt(r.LastSeenDays,10)||0,
+    PasswordAgeDays: parseInt(r.PasswordAgeDays,10)||0,
+    AccountAgeDays: parseInt(r.AccountAgeDays,10)||0,
+  }));
+  populateFilters();
+  applyFilters();
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+}
+
+/* ── Filters ────────────────────────────────────────────── */
+function populateFilters() {
+  fill('f-country', [...new Set(RAW.map(r=>r.Pais).filter(Boolean))].sort());
+  fill('f-type', [...new Set(RAW.map(r=>r.Tipo).filter(Boolean))].sort());
+  fill('f-risk', ['BAJO','MEDIO','ALTO']);
+  fill('f-usage', ['Active','Aging','Inactive','NeverUsed','New']);
+  fill('f-decision', [...new Set(RAW.map(r=>r.Decision).filter(Boolean))].sort());
+  fill('f-gim', [...new Set(RAW.map(r=>r.CasoGIM).filter(Boolean))].sort());
+  ['f-country','f-type','f-risk','f-usage','f-decision','f-gim'].forEach(id =>
+    document.getElementById(id).addEventListener('change', () => { currentPage=0; applyFilters(); })
+  );
+  document.getElementById('table-search').addEventListener('input', () => { currentPage=0; applySearch(); renderTable(); });
+}
+function fill(id, vals) {
+  const sel = document.getElementById(id);
+  while (sel.options.length > 1) sel.remove(1);
+  vals.forEach(v => { const o = document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
+}
+function resetFilters() {
+  ['f-country','f-type','f-risk','f-usage','f-decision','f-gim'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('table-search').value = '';
+  currentPage = 0;
+  applyFilters();
+}
+function applyFilters() {
+  const fc = document.getElementById('f-country').value;
+  const ft = document.getElementById('f-type').value;
+  const fr = document.getElementById('f-risk').value;
+  const fu = document.getElementById('f-usage').value;
+  const fd = document.getElementById('f-decision').value;
+  const fg = document.getElementById('f-gim').value;
+  filtered = RAW.filter(r =>
+    (!fc || r.Pais===fc) &&
+    (!ft || r.Tipo===ft) &&
+    (!fr || r.Riesgo===fr) &&
+    (!fu || r.EstadoUso===fu) &&
+    (!fd || r.Decision===fd) &&
+    (!fg || r.CasoGIM===fg)
+  );
+  applySearch();
+  updateKPIs();
+  updateCharts();
+  renderTable();
+}
+function applySearch() {
+  const q = document.getElementById('table-search').value.toLowerCase();
+  searched = q ? filtered.filter(r => (r.Usuario+' '+r.UPN+' '+r.Pais+' '+r.Decision+' '+r.CasoGIM+' '+r.Manager+' '+r.Departamento).toLowerCase().includes(q)) : [...filtered];
+}
+
+/* ── KPIs ───────────────────────────────────────────────── */
+function updateKPIs() {
+  const d = filtered, n = d.length;
+  const alto = d.filter(r=>r.Riesgo==='ALTO').length;
+  const medio = d.filter(r=>r.Riesgo==='MEDIO').length;
+  const bajo = d.filter(r=>r.Riesgo==='BAJO').length;
+  const active = d.filter(r=>r.EstadoUso==='Active').length;
+  const stale = d.filter(r=>r.EstadoPassword==='Stale').length;
+  const noAzure = d.filter(r=>r.AzureStatus==='NOT_IN_AZURE').length;
+  const gda = d.filter(r=>r.CasoGIM==='GDA').length;
+  const gimAnalizar = d.filter(r=>r.CasoGIM==='ANALIZAR').length;
+  const wf = d.filter(r=>r.Tipo==='Workforce').length;
+  const ext = d.filter(r=>r.Tipo==='External').length;
+  // Risk score: 100 = all low, 0 = all high
+  const score = n ? Math.round(100 - ((alto*3+medio*2)/(n*3))*100) : 100;
+
+  const kpis = [
+    {label:t('kpi.total'), value:fmt(n), sub:`Workforce: ${fmt(wf)} | External: ${fmt(ext)}`, cls:'blue'},
+    {label:t('kpi.score'), value:score, sub:score>=80?t('kpi.healthy'):score>=60?t('kpi.attention'):t('kpi.urgent'), cls:score>=80?'green':score>=60?'amber':'red', valCls:score>=80?'green':score>=60?'amber':'danger'},
+    {label:t('kpi.high'), value:fmt(alto), sub:pct(alto,n)+' '+t('kpi.of_total'), cls:'red', valCls:'danger'},
+    {label:t('kpi.medium'), value:fmt(medio), sub:pct(medio,n)+' '+t('kpi.of_total'), cls:'amber', valCls:'amber'},
+    {label:t('kpi.active'), value:pct(active,n), sub:fmt(active)+' '+t('table.of')+' '+fmt(n), cls:'green', valCls:'green'},
+    {label:t('kpi.stale'), value:fmt(stale), sub:pct(stale,n)+' '+t('kpi.need_change'), cls:'purple', valCls:stale/n>.15?'danger':'amber'},
+    {label:t('kpi.noazure'), value:fmt(noAzure), sub:noAzure?t('kpi.check_sync'):t('kpi.all_synced'), cls:'cyan', valCls:noAzure>0?'amber':'green'},
+    {label:t('kpi.gda'), value:fmt(gda), sub:`ANALIZAR: ${fmt(gimAnalizar)}`, cls:'red', valCls:gda>0?'danger':'green'},
+  ];
+
+  const grid = document.getElementById('kpi-grid');
+  grid.innerHTML = kpis.map(k => `
+    <div class="kpi kpi-${k.cls}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value ${k.valCls||''}">${k.value}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>
+  `).join('');
+}
+
+/* ── Charts ─────────────────────────────────────────────── */
+function updateCharts() {
+  renderDonut('ch-risk',   'Riesgo',         C.risk,  ['BAJO','MEDIO','ALTO']);
+  renderDonut('ch-usage',  'EstadoUso',      C.usage, ['Active','Aging','Inactive','NeverUsed','New']);
+  renderDonut('ch-pwd',    'EstadoPassword',  C.pwd,   ['OK','Stale','MustSet']);
+  renderDonut('ch-azure',  'CasoAzure',      C.azure, ['AZUREOK','PWDKOAZUREOK','NO_ACTIVITY','NOAZURE']);
+  renderDonut('ch-type',   'Tipo',           C.type,  ['Workforce','External','Other']);
+  renderDonut('ch-gim',    'CasoGIM',        C.gim,   ['OK','ANALIZAR','GDA']);
+  renderGIMAction();
+  renderBarCountry();
+  renderRiskByCountry();
+  renderDecision();
+}
+
+function renderDonut(id, field, colorMap, order) {
+  const tc = TC();
+  const counts = {};
+  order.forEach(k => counts[k]=0);
+  filtered.forEach(r => { if (r[field] in counts) counts[r[field]]++; else counts[r[field]] = (counts[r[field]]||0)+1; });
+  const labels = order.filter(k => counts[k]>0);
+  const data = labels.map(k => counts[k]);
+  const colors = labels.map(k => colorMap[k]||'#64748b');
+  const total = data.reduce((a,b)=>a+b,0);
+
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(document.getElementById(id), {
+    type: 'doughnut',
+    data: { labels, datasets:[{data, backgroundColor:colors, borderWidth:0, hoverBorderWidth:2, hoverBorderColor:'#fff'}] },
+    plugins: [ChartDataLabels, centerTextPlugin(total)],
+    options: {
+      responsive:true, maintainAspectRatio:true, cutout:'68%',
+      layout:{padding:5},
+      plugins:{
+        legend:{position:'bottom',labels:{color:tc.legend,font:{size:11,family:'Inter'},padding:12,usePointStyle:true,pointStyleWidth:8}},
+        tooltip:{backgroundColor:tc.ttBg,titleColor:tc.ttTitle,bodyColor:tc.ttBody,borderColor:tc.ttBorder,borderWidth:1,
+          callbacks:{label:ctx=>`${ctx.label}: ${fmt(ctx.raw)} (${pct(ctx.raw,total)})`}},
+        datalabels:{color:'#fff',font:{weight:700,size:11},
+          formatter:(v)=>v/total>.04?pct(v,total):'',anchor:'center',align:'center'}
+      }
+    }
+  });
+}
+
+function renderBarCountry() {
+  const tc = TC();
+  const counts = {};
+  filtered.forEach(r => counts[r.Pais] = (counts[r.Pais]||0)+1);
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const labels = sorted.map(e=>e[0]);
+  const data = sorted.map(e=>e[1]);
+
+  if (charts['ch-country']) charts['ch-country'].destroy();
+  charts['ch-country'] = new Chart(document.getElementById('ch-country'), {
+    type:'bar',
+    data:{labels,datasets:[{data,backgroundColor:C.bar.slice(0,labels.length),borderRadius:4,borderSkipped:false}]},
+    plugins:[ChartDataLabels],
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+        tooltip:{backgroundColor:tc.ttBg,titleColor:tc.ttTitle,bodyColor:tc.ttBody},
+        datalabels:{anchor:'end',align:'right',color:tc.label,font:{size:10,weight:600},formatter:v=>fmt(v)}},
+      scales:{
+        x:{grid:{color:tc.grid},ticks:{color:tc.tick2,font:{size:10}}},
+        y:{grid:{display:false},ticks:{color:tc.tick,font:{size:11,weight:500}}}
+      }
+    }
+  });
+}
+
+function renderRiskByCountry() {
+  const tc = TC();
+  const countries = {};
+  filtered.forEach(r => {
+    if (!countries[r.Pais]) countries[r.Pais] = {BAJO:0,MEDIO:0,ALTO:0};
+    countries[r.Pais][r.Riesgo]++;
+  });
+  const sorted = Object.entries(countries).sort((a,b)=>(b[1].ALTO+b[1].MEDIO)-(a[1].ALTO+a[1].MEDIO));
+  const labels = sorted.map(e=>e[0]);
+
+  if (charts['ch-risk-country']) charts['ch-risk-country'].destroy();
+  charts['ch-risk-country'] = new Chart(document.getElementById('ch-risk-country'), {
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'ALTO',data:sorted.map(e=>e[1].ALTO),backgroundColor:C.risk.ALTO+'cc',borderRadius:2},
+      {label:'MEDIO',data:sorted.map(e=>e[1].MEDIO),backgroundColor:C.risk.MEDIO+'cc',borderRadius:2},
+      {label:'BAJO',data:sorted.map(e=>e[1].BAJO),backgroundColor:C.risk.BAJO+'cc',borderRadius:2},
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{color:tc.legend,font:{size:10,family:'Inter'},usePointStyle:true,pointStyleWidth:8}},
+        tooltip:{mode:'index',intersect:false,backgroundColor:tc.ttBg,titleColor:tc.ttTitle,bodyColor:tc.ttBody},
+        datalabels:{display:false}},
+      scales:{
+        x:{stacked:true,grid:{display:false},ticks:{color:tc.tick,font:{size:11,weight:500}}},
+        y:{stacked:true,grid:{color:tc.grid},ticks:{color:tc.tick2,font:{size:10}}}
+      }
+    }
+  });
+}
+
+function renderDecision() {
+  const tc = TC();
+  const counts = {};
+  filtered.forEach(r => { const d = r.Decision||'N/A'; counts[d]=(counts[d]||0)+1; });
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const labels = sorted.map(e=>e[0]);
+  const data = sorted.map(e=>e[1]);
+  const colors = ['#22c55e','#ef4444','#eab308','#f97316','#3b82f6','#8b5cf6','#64748b'];
+
+  if (charts['ch-decision']) charts['ch-decision'].destroy();
+  charts['ch-decision'] = new Chart(document.getElementById('ch-decision'), {
+    type:'bar',
+    data:{labels,datasets:[{data,backgroundColor:colors.slice(0,labels.length),borderRadius:4,borderSkipped:false}]},
+    plugins:[ChartDataLabels],
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+        tooltip:{backgroundColor:tc.ttBg,titleColor:tc.ttTitle,bodyColor:tc.ttBody},
+        datalabels:{anchor:'end',align:'right',color:tc.label,font:{size:10,weight:600},formatter:v=>fmt(v)}},
+      scales:{
+        x:{grid:{color:tc.grid},ticks:{color:tc.tick2,font:{size:10}}},
+        y:{grid:{display:false},ticks:{color:tc.tick,font:{size:11,weight:500}}}
+      }
+    }
+  });
+}
+
+function renderGIMAction() {
+  const tc = TC();
+  const actionCases = ['GDA','ANALIZAR'];
+  const counts = {};
+  actionCases.forEach(k => counts[k]=0);
+  filtered.forEach(r => { if (r.CasoGIM && actionCases.includes(r.CasoGIM)) counts[r.CasoGIM]++; });
+  const labels = actionCases.filter(k => counts[k]>0);
+  const data = labels.map(k => counts[k]);
+  const colors = labels.map(k => C.gim[k]||'#64748b');
+
+  if (charts['ch-gim-action']) charts['ch-gim-action'].destroy();
+  if (labels.length === 0) {
+    const ctx = document.getElementById('ch-gim-action').getContext('2d');
+    ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+    ctx.fillStyle = tc.centerSub;
+    ctx.font = '500 0.85rem Inter';
+    ctx.textAlign = 'center';
+    ctx.fillText('Sin acciones pendientes', ctx.canvas.width/2, ctx.canvas.height/2);
+    return;
+  }
+  charts['ch-gim-action'] = new Chart(document.getElementById('ch-gim-action'), {
+    type:'bar',
+    data:{labels,datasets:[{data,backgroundColor:colors,borderRadius:4,borderSkipped:false}]},
+    plugins:[ChartDataLabels],
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+        tooltip:{backgroundColor:tc.ttBg,titleColor:tc.ttTitle,bodyColor:tc.ttBody},
+        datalabels:{anchor:'end',align:'right',color:tc.label,font:{size:10,weight:600},formatter:v=>fmt(v)}},
+      scales:{
+        x:{grid:{color:tc.grid},ticks:{color:tc.tick2,font:{size:10}}},
+        y:{grid:{display:false},ticks:{color:tc.tick,font:{size:11,weight:500}}}
+      }
+    }
+  });
+}
+
+/* Center text plugin for donuts */
+function centerTextPlugin(total) {
+  return {
+    id:'centerText',
+    afterDraw(chart) {
+      const tc = TC();
+      const {ctx,chartArea:{top,bottom,left,right}} = chart;
+      const cx = (left+right)/2, cy = (top+bottom)/2;
+      ctx.save();
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.font='800 1.5rem Inter'; ctx.fillStyle=tc.center;
+      ctx.fillText(fmt(total), cx, cy-6);
+      ctx.font='500 0.65rem Inter'; ctx.fillStyle=tc.centerSub;
+      ctx.fillText('total', cx, cy+14);
+      ctx.restore();
+    }
+  };
+}
+
+/* ── Table ──────────────────────────────────────────────── */
+function renderTable() {
+  const COLS = getCols();
+  sortData();
+  totalPages = Math.ceil(searched.length / PAGE_SIZE) || 1;
+  if (currentPage >= totalPages) currentPage = totalPages - 1;
+
+  // Header
+  const thead = document.getElementById('thead');
+  thead.innerHTML = '<tr>' + COLS.map(c => {
+    const isSorted = sortCol===c.key;
+    const arrow = isSorted ? (sortAsc?'&#9650;':'&#9660;') : '&#9650;';
+    return `<th class="${isSorted?'sorted':''}" onclick="sortBy('${c.key}')">${c.label}<span class="sort-icon">${arrow}</span></th>`;
+  }).join('') + '</tr>';
+
+  // Body
+  const start = currentPage * PAGE_SIZE;
+  const page = searched.slice(start, start + PAGE_SIZE);
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = page.map(r => '<tr>' + COLS.map(c => {
+    let v = r[c.key] ?? '';
+    if (c.key==='Riesgo') v = `<span class="badge badge-${v.toLowerCase()}">${v}</span>`;
+    else if (c.key==='EstadoUso') v = `<span class="badge badge-${v==='NeverUsed'?'never':v.toLowerCase()}">${v}</span>`;
+    else if (c.key==='EstadoPassword') v = `<span class="badge badge-${v.toLowerCase()}">${v}</span>`;
+    else if (c.key==='CasoGIM' && v) v = `<span class="badge badge-gim-${v.toLowerCase()}">${v}</span>`;
+    else if (c.key==='LastSeenDays'||c.key==='PasswordAgeDays') v = fmt(v);
+    return `<td>${v}</td>`;
+  }).join('') + '</tr>').join('');
+
+  // Pagination
+  document.getElementById('table-title').textContent = `${t('table.title')} (${fmt(searched.length)} ${t('table.records')})`;
+  document.getElementById('page-info').textContent = `${t('table.page')} ${currentPage+1} ${t('table.of')} ${totalPages}`;
+  document.getElementById('pg-first').disabled = currentPage===0;
+  document.getElementById('pg-prev').disabled = currentPage===0;
+  document.getElementById('pg-next').disabled = currentPage>=totalPages-1;
+  document.getElementById('pg-last').disabled = currentPage>=totalPages-1;
+}
+function goPage(p) { currentPage = Math.max(0,Math.min(p,totalPages-1)); renderTable(); }
+function sortBy(col) { if (sortCol===col) sortAsc=!sortAsc; else { sortCol=col; sortAsc=true; } renderTable(); }
+function sortData() {
+  searched.sort((a,b) => {
+    let va=a[sortCol], vb=b[sortCol];
+    if (typeof va==='number'&&typeof vb==='number') return sortAsc?va-vb:vb-va;
+    va=String(va||''); vb=String(vb||'');
+    return sortAsc?va.localeCompare(vb):vb.localeCompare(va);
+  });
+}
+
+/* ── Export ──────────────────────────────────────────────── */
+function exportCSV() {
+  const COLS = getCols();
+  const hdr = COLS.map(c=>c.label).join(';');
+  const rows = searched.map(r => COLS.map(c => r[c.key]??'').join(';'));
+  const blob = new Blob(['\uFEFF'+hdr+'\n'+rows.join('\n')], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'dashboard_export_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
+/* ── Theme Toggle ──────────────────────────────────────── */
+function toggleTheme() {
+  const html = document.documentElement;
+  const newTheme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+  html.dataset.theme = newTheme;
+  document.getElementById('theme-icon').innerHTML = newTheme === 'dark' ? '&#9790;' : '&#9788;';
+  if (RAW.length) updateCharts();
+}
+
+/* ── Language Toggle ───────────────────────────────────── */
+function toggleLang() {
+  currentLang = currentLang === 'es' ? 'en' : 'es';
+  document.documentElement.lang = currentLang;
+  document.documentElement.dataset.lang = currentLang;
+  document.getElementById('lang-label').textContent = currentLang === 'es' ? 'EN' : 'ES';
+  translatePage();
+  if (RAW.length) {
+    updateKPIs();
+    updateCharts();
+    renderTable();
+  }
+}
+
+function translatePage() {
+  // data-i18n → textContent
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  // data-i18n-html → innerHTML
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    el.innerHTML = t(el.dataset.i18nHtml);
+  });
+  // data-i18n-placeholder → placeholder
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+  // Legend bodies
+  const bodies = currentLang === 'en' ? LEGEND_EN : LEGEND_ES;
+  for (const [key, html] of Object.entries(bodies)) {
+    const el = document.getElementById('leg-body-' + key);
+    if (el) el.innerHTML = html;
+  }
+}
+
+/* ── Helpers ────────────────────────────────────────────── */
+function fmt(n) { return Number(n).toLocaleString(currentLang === 'en' ? 'en-US' : 'es-ES'); }
+function pct(v,t) { return t ? (v/t*100).toFixed(1)+'%' : '0%'; }
+</script>
+</body>
+</html>
